@@ -3,8 +3,7 @@
 namespace TaxApiDpd\Core;
 
 use Taxmod\Core\Import\Mail\MailMessage;
-use Taxmod\Core\Import\Mail\OrderMailParser;
-use Taxmod\Core\Import\OrderProposal;
+use Taxmod\Core\Import\Mail\ParcelNoticeMailParser;
 use Taxmod\Core\Import\ProposalKind;
 
 /**
@@ -15,58 +14,20 @@ use Taxmod\Core\Import\ProposalKind;
  *
  * @see https://github.com/sfambach/wp-taxonomy-modeler/blob/main/docs/pakete/import/module-schnitt.md
  */
-final class DpdNoticeMailParser implements OrderMailParser
+final class DpdNoticeMailParser extends ParcelNoticeMailParser
 {
     private const DOMAINS = ['dpd.de', 'dpd.com'];
 
-    public function __construct(private readonly string $version)
+    public function __construct(string $version)
     {
-    }
-
-    public function key(): string
-    {
-        return 'dpd';
-    }
-
-    public function shopName(): string
-    {
-        return 'DPD';
-    }
-
-    public function recognises(MailMessage $mail): bool
-    {
-        $domain = $mail->senderDomain();
-
-        return array_filter(self::DOMAINS, static fn (string $dpd): bool => $domain === $dpd || str_ends_with($domain, '.' . $dpd)) !== [];
-    }
-
-    public function parse(MailMessage $mail): OrderProposal
-    {
-        $number = $this->parcelNumber($mail);
-        $kind = $this->kind($mail);
-
-        if ($kind === ProposalKind::NoReceipt || $number === null) {
-            return new OrderProposal($this->shopName(), '', ProposalKind::NoReceipt);
-        }
-
-        return new OrderProposal($this->shopName(), 'sendung:' . $number, $kind, trackingNumbers: [$number], numberMissing: true);
-    }
-
-    public function kinds(): array
-    {
-        return [ProposalKind::Shipped, ProposalKind::Delivered];
-    }
-
-    public function version(): string
-    {
-        return $this->version;
+        parent::__construct('dpd', 'DPD', self::DOMAINS, $version);
     }
 
     /**
      * The subject names the step in every layout seen since 2020. Announced and time window are both «on the way»;
      * delivered and set down at the agreed place are both «delivered».
      */
-    private function kind(MailMessage $mail): ProposalKind
+    protected function kind(MailMessage $mail): ProposalKind
     {
         $subject = mb_strtolower($mail->subject);
 
@@ -81,7 +42,7 @@ final class DpdNoticeMailParser implements OrderMailParser
      * The 14-digit parcel number: «Ihre Sendung 0944… von …» (layout until 2021-01), the line after the shipper
      * below «Versender & Paketnummer:» (since 2021-02), or the tracking link, which wraps it between a three-character prefix (EXP, B2C) and the date.
      */
-    private function parcelNumber(MailMessage $mail): ?string
+    protected function parcelNumber(MailMessage $mail): ?string
     {
         $lines = $mail->lines();
 

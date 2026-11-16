@@ -3,7 +3,7 @@
 namespace TaxApiDpd\WordPress;
 
 use TaxApiDpd\Core\DpdNoticeMailParser;
-use Taxmod\Core\Import\Mail\OrderMailParser;
+use Taxmod\Core\Import\Mail\ShopMailParser;
 
 /**
  * The boundary: registers the DPD notice reader with Taxmod Mail (filter `taxmail_parsers`) and a tab on the
@@ -13,7 +13,7 @@ use Taxmod\Core\Import\Mail\OrderMailParser;
  */
 final class Plugin
 {
-    public const VERSION = '0.0.1';
+    public const VERSION = '0.0.2';
     public const TAB     = 'dpd';
 
     public static function boot(): void
@@ -22,9 +22,9 @@ final class Plugin
             load_plugin_textdomain('taxapidpd', false, dirname(plugin_basename(dirname(__DIR__, 2) . '/wp-tax-api-dpd.php')) . '/languages');
 
             // The contract lives in the modeller; without it there is nothing to register with.
-            if (! interface_exists(OrderMailParser::class)) {
+            if (! class_exists(ShopMailParser::class)) {
                 add_action('admin_notices', static fn () => print '<div class="notice notice-warning"><p><strong>Taxmod DPD:</strong> '
-                    . esc_html__('needs the Taxonomy Modeller 0.1.89 or later and Taxmod Mail 0.6.0 or later.', 'taxapidpd') . '</p></div>');
+                    . esc_html__('needs the Taxonomy Modeller 0.2.120 or later and Taxmod Mail 0.6.0 or later.', 'taxapidpd') . '</p></div>');
 
                 return;
             }
